@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f4f5f9">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-title" content="Мандала">
+<title>Мандала-чарт 9×9</title>
+<style>
+:root{
+  --bg:#f4f5f9;--card:#ffffff;--text:#1d2130;--muted:#7a8094;--line:#e4e7ef;
+  --accent:#5b6cff;--accent2:#8a5bff;--ok:#2fbf71;
+  --ts:75%;--tl:94%;--ss:65%;--sl:52%;
+  --shadow:0 6px 20px rgba(30,40,80,.08);
+  --fs:8px;
+}
+:root[data-theme="dark"]{
+  --bg:#0f1117;--card:#181b25;--text:#eceef6;--muted:#8d93a8;--line:#272b39;
+  --ts:30%;--tl:20%;--ss:50%;--sl:42%;
+  --shadow:0 6px 20px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;transition:background .3s,color .3s}
+body{min-height:100dvh;padding:env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + 24px)}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+.app{max-width:640px;margin:0 auto;padding:0 10px}
+
+/* header */
+header{position:sticky;top:0;z-index:20;background:var(--bg);padding:12px 2px 8px;transition:background .3s}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+h1{font-size:19px;margin:0;font-weight:800;letter-spacing:-.3px}
+h1 small{display:block;font-size:12px;font-weight:500;color:var(--muted);letter-spacing:0}
+.topbtns{display:flex;align-items:center;gap:8px}
+.iconbtn{width:40px;height:40px;border-radius:12px;background:var(--card);box-shadow:var(--shadow);font-size:18px;display:grid;place-items:center;transition:transform .15s}
+.iconbtn:active{transform:scale(.92)}
+.menuwrap{position:relative}
+.menu{position:absolute;right:0;top:46px;min-width:250px;background:var(--card);border-radius:16px;padding:6px;box-shadow:0 16px 44px rgba(20,25,60,.28);z-index:40;animation:fade .18s}
+.menu[hidden]{display:none}
+.menu button{display:flex;width:100%;align-items:center;gap:10px;padding:12px;border-radius:12px;font-size:14px;font-weight:600;text-align:left;transition:background .15s}
+.menu button:active{background:var(--bg)}
+.menu button.danger{color:#e5484d}
+.menu .sep{height:1px;background:var(--line);margin:4px 8px}
+.progress{margin-top:10px;background:var(--card);border-radius:14px;padding:10px 12px;box-shadow:var(--shadow)}
+.progress .row{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:6px}
+.progress .row b{color:var(--text);font-size:14px}
+.bar{height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.tabs{display:flex;gap:6px;margin-top:10px;background:var(--card);padding:4px;border-radius:14px;box-shadow:var(--shadow)}
+.tabs button{flex:1;padding:10px;border-radius:10px;font-weight:600;font-size:14px;color:var(--muted);transition:all .25s}
+.tabs button.on{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 4px 12px rgba(91,108,255,.35)}
+
+/* grid view */
+.tools{display:flex;align-items:center;justify-content:space-between;margin:12px 2px 8px;font-size:12px;color:var(--muted)}
+.zoom{display:flex;align-items:center;gap:6px}
+.zoom button{width:34px;height:34px;border-radius:10px;background:var(--card);box-shadow:var(--shadow);font-size:18px;font-weight:700}
+.zoom span{min-width:42px;text-align:center;font-weight:600;color:var(--text)}
+.scroller{overflow:auto;border-radius:16px;background:var(--card);box-shadow:var(--shadow);-webkit-overflow-scrolling:touch;max-height:calc(100dvh - 230px);min-height:300px}
+.board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:6px;transition:width .3s}
+.blk{display:flex;flex-direction:column;gap:3px;padding:3px;border-radius:9px;background:var(--line);position:relative;transition:transform .25s,box-shadow .25s,opacity .25s}
+.bg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px}
+.bh{position:relative;overflow:hidden;display:flex;align-items:center;gap:calc(var(--fs)*.45);min-height:calc(var(--fs)*3.6);padding:calc(var(--fs)*.42) calc(var(--fs)*.65) calc(var(--fs)*.42) calc(var(--fs)*.38);border-radius:6px;background:hsl(var(--h,235) var(--ss) var(--sl));color:#fff;line-height:1.12;font-weight:700;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;cursor:grab}
+.blk.center .bh{background:linear-gradient(135deg,var(--accent),var(--accent2));cursor:default}
+.bn{flex:none;min-width:calc(var(--fs)*2.4);height:calc(var(--fs)*2.4);border-radius:99px;background:rgba(255,255,255,.3);display:grid;place-items:center;font-size:calc(var(--fs)*1.45);font-weight:800}
+.bt{flex:1;min-width:0;font-size:calc(var(--fs)*1.05);line-height:1.15;font-weight:600;opacity:.95;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.bs{flex:none;opacity:.9;font-size:calc(var(--fs)*.95);font-weight:600}
+.cell,.bh{-webkit-touch-callout:none}
+.cell.holding::after,.bh.holding::after{content:"";position:absolute;inset:0;background:rgba(255,255,255,.38);transform:scaleX(0);transform-origin:left;pointer-events:none;animation:holdfill calc(var(--hold,1000ms) - .25s) linear .25s forwards}
+.bh.holding::after{animation-duration:calc(var(--holdm,2000ms) - .25s)}
+@keyframes holdfill{to{transform:scaleX(1)}}
+.blk.picked{transform:scale(1.04);z-index:5;box-shadow:0 0 0 3px var(--accent),0 12px 28px rgba(91,108,255,.45)}
+.board.moving .blk:not(.center):not(.picked){animation:tgt .7s ease-in-out infinite alternate;cursor:pointer}
+.board.moving .blk.center{opacity:.55}
+@keyframes tgt{from{box-shadow:0 0 0 2px rgba(138,91,255,.25)}to{box-shadow:0 0 0 3px rgba(138,91,255,.95)}}
+.blk.swapped{animation:swp .9s ease-out}
+@keyframes swp{from{box-shadow:0 0 0 4px var(--ok);transform:scale(1.04)}to{box-shadow:0 0 0 0 transparent;transform:none}}
+.movebar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px;padding:8px 10px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:12.5px;font-weight:600;animation:fade .25s}
+.movebar .btn{background:rgba(255,255,255,.25);color:#fff;padding:7px 12px;flex:none}
+.cell{aspect-ratio:1;position:relative;border-radius:6px;background:hsl(var(--h,220) var(--ts) var(--tl));padding:calc(var(--fs)*.35);font-size:var(--fs);line-height:1.15;overflow:hidden;cursor:pointer;transition:transform .12s,background .3s,opacity .3s;user-select:none}
+.cell:active{transform:scale(.94)}
+.cell .txt{display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.cell.task .txt{padding-bottom:calc(var(--fs)*1.2)}
+.cell.empty .txt::before{content:"＋";opacity:.28;font-size:calc(var(--fs)*1.2)}
+.cell.sub{background:hsl(var(--h) var(--ss) var(--sl));color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;text-align:center}
+.cell.sub.empty .txt::before{opacity:.6}
+.cell.main{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;text-align:center;font-size:calc(var(--fs)*1.1);box-shadow:inset 0 0 0 2px rgba(255,255,255,.25)}
+.cell.main.empty .txt::before{content:"🎯";opacity:.9}
+.cell.done{opacity:.62}
+.cell.done .txt{text-decoration:line-through}
+.chk{position:absolute;right:calc(var(--fs)*.3);bottom:calc(var(--fs)*.3);width:calc(var(--fs)*1.7);height:calc(var(--fs)*1.7);border-radius:50%;border:max(1.5px,calc(var(--fs)*.15)) solid hsl(var(--h) 50% 55%);display:grid;place-items:center;color:#fff;font-size:calc(var(--fs)*1.05);line-height:1;background:transparent;transition:background .2s,border-color .2s}
+.chk::after{content:"";position:absolute;inset:calc(var(--fs)*-.6)}
+.cell.done .chk{background:var(--ok);border-color:var(--ok);animation:pop .3s}
+@keyframes pop{0%{transform:scale(.6)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+.hint{font-size:12px;color:var(--muted);text-align:center;margin:10px 0 0}
+
+/* blocks view */
+.mini{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:12px}
+.mini button{background:hsl(var(--h,220) var(--ts) var(--tl));border-radius:12px;padding:8px;text-align:left;min-height:68px;display:flex;flex-direction:column;justify-content:space-between;gap:4px;box-shadow:0 0 0 2px transparent;transition:all .2s}
+.mini button.on{box-shadow:0 0 0 2.5px hsl(var(--h,235) 70% 55%);transform:translateY(-2px)}
+.mini button.main{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+.mini .n{font-size:11px;font-weight:700;opacity:.7}
+.mini .t{font-size:12px;font-weight:600;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.mini .mb{height:4px;border-radius:9px;background:rgba(128,128,128,.25);overflow:hidden}
+.mini .mb i{display:block;height:100%;background:var(--ok);transition:width .4s}
+.detail{margin-top:12px;background:var(--card);border-radius:16px;padding:12px;box-shadow:var(--shadow);animation:fade .3s}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.dhead{border-radius:12px;padding:10px;background:hsl(var(--h,235) var(--ss) var(--sl));color:#fff;margin-bottom:10px}
+.dhead.main{background:linear-gradient(135deg,var(--accent),var(--accent2))}
+.dhead label{font-size:11px;font-weight:700;opacity:.85;text-transform:uppercase;letter-spacing:.5px}
+.dhead textarea{background:rgba(255,255,255,.18);color:#fff;font-weight:700;font-size:16px;margin-top:4px}
+.dhead textarea::placeholder{color:rgba(255,255,255,.7)}
+.item{display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0}
+.item .num{width:18px;padding-top:11px;font-size:12px;color:var(--muted);text-align:center}
+.bigchk{flex:none;width:30px;height:30px;margin-top:4px;border-radius:50%;border:2.5px solid hsl(var(--h,235) 50% 60%);display:grid;place-items:center;color:#fff;font-size:16px;transition:all .2s}
+.bigchk.on{background:var(--ok);border-color:var(--ok);animation:pop .3s}
+.goto{flex:none;margin-top:4px;padding:6px 10px;border-radius:10px;background:hsl(var(--h) var(--ts) var(--tl));font-size:12px;font-weight:700}
+textarea{width:100%;border:0;outline:0;resize:none;background:transparent;color:inherit;font:inherit;font-size:15px;line-height:1.3;padding:8px 6px;border-radius:8px;overflow:hidden;display:block}
+.item textarea:focus{background:var(--bg)}
+.item.done textarea{text-decoration:line-through;opacity:.55}
+
+/* settings */
+.settings{margin-top:18px;background:var(--card);border-radius:16px;padding:6px 14px;box-shadow:var(--shadow)}
+.settings .line{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}
+.settings .line:last-child{border-bottom:0}
+.settings small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.settings input[type=range]{width:160px;flex:none;accent-color:var(--accent);height:28px}
+.btn{padding:8px 12px;border-radius:10px;background:var(--bg);font-size:13px;font-weight:600}
+.btn.danger{color:#e5484d}
+.switch{position:relative;width:48px;height:28px;flex:none}
+.switch input{opacity:0;position:absolute;inset:0;width:100%;height:100%;margin:0;z-index:2;cursor:pointer}
+.switch i{position:absolute;inset:0;border-radius:99px;background:var(--line);transition:.25s}
+.switch i::after{content:"";position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.25);transition:.25s}
+.switch input:checked+i{background:var(--accent)}
+.switch input:checked+i::after{transform:translateX(20px)}
+
+/* editor */
+.sheet{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:max(10vh,env(safe-area-inset-top)) 12px 12px;background:rgba(10,12,25,.5);backdrop-filter:blur(3px);animation:fadeIn .2s}
+.sheet[hidden]{display:none}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.panel{width:100%;max-width:460px;background:var(--card);border-radius:20px;padding:16px;box-shadow:0 20px 50px rgba(0,0,0,.35);animation:slide .25s cubic-bezier(.2,.8,.2,1)}
+@keyframes slide{from{transform:translateY(-16px) scale(.97);opacity:0}to{transform:none;opacity:1}}
+.panel h3{margin:0 0 10px;font-size:15px}
+.panel textarea{background:var(--bg);font-size:16px;padding:12px;min-height:90px;border-radius:12px;overflow:auto}
+.donerow{display:flex;align-items:center;gap:10px;margin:12px 2px;font-size:15px}
+.donerow input{width:22px;height:22px;accent-color:var(--ok)}
+.prow{display:flex;gap:8px;margin-top:10px}
+.prow .btn{flex:1;padding:12px}
+.prow .primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translate(-50%,30px);background:#222;color:#fff;padding:10px 16px;border-radius:99px;font-size:13px;opacity:0;pointer-events:none;transition:.3s;z-index:99;max-width:90%;text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="top">
+      <h1>Мандала-чарт <small>План 9×9: цель → 8 подцелей → 64 шага</small></h1>
+      <div class="topbtns">
+        <button class="iconbtn" id="themeBtn" aria-label="Тема">🌗</button>
+        <div class="menuwrap">
+          <button class="iconbtn" id="menuBtn" aria-label="Меню">☰</button>
+          <div class="menu" id="menu" hidden>
+            <button id="mExport">📊 Экспорт в Excel</button>
+            <button id="mImport">📥 Импорт из Excel / CSV</button>
+            <button id="mCsv">📄 Экспорт в CSV</button>
+            <div class="sep"></div>
+            <button id="mReset">✅ Снять все отметки</button>
+            <button id="mClear" class="danger">🗑 Очистить всё</button>
+            <div class="sep"></div>
+            <button id="mSettings">⚙️ Настройки</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="progress">
+      <div class="row"><span>Выполнено шагов</span><span><b id="pTxt">0 / 64</b> · <span id="pPct">0%</span></span></div>
+      <div class="bar"><i id="pBar"></i></div>
+    </div>
+    <input type="file" id="importFile" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+    <div class="tabs">
+      <button id="tabGrid" class="on">Сетка 9×9</button>
+      <button id="tabBlocks">Блоки</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="viewGrid">
+      <div class="tools">
+        <span>Удерживайте ячейку <b id="hE1"></b> сек, чтобы изменить</span>
+        <div class="zoom"><button id="zOut" aria-label="Уменьшить">−</button><span id="zLbl">100%</span><button id="zIn" aria-label="Увеличить">+</button></div>
+      </div>
+      <div class="movebar" id="moveBar" hidden><span>Переносите блок <b id="mvN"></b>: нажмите на блок, с которым поменять местами</span><button class="btn" id="mvCancel">Отмена</button></div>
+      <div class="scroller" id="scroller"><div class="board" id="board"></div></div>
+      <p class="hint">Кружок в углу шага — отметка выполнения (нажатие мгновенное). Чтобы изменить текст, удерживайте ячейку <b id="hE2"></b> сек. Чтобы поменять блоки местами, удерживайте цветной заголовок блока <b id="hM2"></b> сек. Масштаб — кнопки «+» / «−» или щипки.</p>
+    </section>
+
+    <section id="viewBlocks" hidden>
+      <div class="mini" id="mini"></div>
+      <div class="detail" id="detail"></div>
+    </section>
+
+    <section class="settings" id="settings">
+      <div class="line"><div>Ежедневный сброс отметок<small>Галочки снимаются автоматически в новый день</small></div>
+        <label class="switch"><input type="checkbox" id="dailySw"><i></i></label></div>
+      <div class="line"><div>Удержание ячейки<small>Редактирование шага/подцели: <b id="ehLbl">1</b> сек</small></div>
+        <input type="range" id="editHold" min="500" max="5000" step="250"></div>
+      <div class="line"><div>Удержание заголовка блока<small>Перемещение блока: <b id="mhLbl">2</b> сек</small></div>
+        <input type="range" id="moveHold" min="500" max="5000" step="250"></div>
+      <div class="line"><span>Снять все отметки</span><button class="btn" id="resetChecks">Сбросить</button></div>
+      <div class="line"><span>Экспорт в CSV</span><button class="btn" id="csvBtn">Скачать</button></div>
+      <div class="line"><span>Очистить всё</span><button class="btn danger" id="clearAll">Удалить</button></div>
+    </section>
+  </main>
+</div>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="panel" id="panel">
+    <h3 id="sTitle"></h3>
+    <textarea id="sText" maxlength="300" placeholder="Введите текст…" enterkeyhint="enter"></textarea>
+    <label class="donerow" id="sDoneRow"><input type="checkbox" id="sDone"> Выполнено</label>
+    <div class="prow">
+      <button class="btn" id="sClear">Очистить</button>
+      <button class="btn" id="sOpen">Открыть блок</button>
+      <button class="btn primary" id="sOk">Готово</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+var KEY='mandalart.v1';
+var HUES=[210,340,160,28,0,270,190,48,120];
+var ZOOMS=[1,1.6,2.4,3.4];
+var $=function(s){return document.querySelector(s)};
+
+function todayStr(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function blank(){
+  var tasks=[];for(var b=0;b<9;b++){var a=[];for(var p=0;p<9;p++)a.push({t:'',d:false});tasks.push(a)}
+  return {main:'',sub:['','','','','','','','',''],tasks:tasks,hue:HUES.slice(),theme:null,daily:false,lastDay:todayStr(),view:'grid',block:0,zoom:0,
+          editHold:1000,moveHold:2000,celebrated:false};
+}
+function load(){
+  try{var r=JSON.parse(localStorage.getItem(KEY));
+    if(r&&r.tasks&&r.tasks.length===9&&r.sub&&r.sub.length===9){var o=Object.assign(blank(),r);
+      if(!Array.isArray(o.hue)||o.hue.length!==9)o.hue=HUES.slice();
+      if(!isFinite(o.editHold)||o.editHold<300)o.editHold=1000;
+      if(!isFinite(o.moveHold)||o.moveHold<300)o.moveHold=2000;
+      return o}}catch(e){}
+  return blank();
+}
+var S=load();
+var saveTimer;
+function save(){clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,200)}
+function saveNow(){clearTimeout(saveTimer);try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+window.addEventListener('pagehide',saveNow);
+document.addEventListener('visibilitychange',function(){if(document.hidden)saveNow();else dailyCheck()});
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function toast(m){var t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(function(){t.classList.remove('show')},2200)}
+function vib(p){try{if(navigator.vibrate)navigator.vibrate(p)}catch(e){}}
+
+/* ---------- model ---------- */
+function kind(b,p){if(b===4&&p===4)return 'main';if(b===4||p===4)return 'sub';return 'task'}
+function getText(b,p){if(b===4)return p===4?S.main:S.sub[p];if(p===4)return S.sub[b];return S.tasks[b][p].t}
+function setText(b,p,v){if(b===4){if(p===4)S.main=v;else S.sub[p]=v}else if(p===4)S.sub[b]=v;else S.tasks[b][p].t=v}
+function cellHue(b,p){return b===4?(p===4?null:S.hue[p]):S.hue[b]}
+function blockNum(b){return b<4?b+1:b}
+function stepNum(p){return p<4?p+1:p}
+function blockStat(b){var d=0,t=0;for(var p=0;p<9;p++){if(p===4)continue;t++;if(S.tasks[b][p].d)d++}return{d:d,t:t}}
+function totals(){var d=0;for(var b=0;b<9;b++){if(b!==4)d+=blockStat(b).d}return{d:d,t:64}}
+
+/* ---------- theme ---------- */
+function applyTheme(){
+  var t=S.theme||(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+  document.documentElement.setAttribute('data-theme',t);
+  var m=document.querySelector('meta[name=theme-color]');if(m)m.content=t==='dark'?'#0f1117':'#f4f5f9';
+}
+$('#themeBtn').onclick=function(){
+  var cur=document.documentElement.getAttribute('data-theme');
+  S.theme=cur==='dark'?'light':'dark';applyTheme();saveNow();
+};
+
+/* ---------- menu ---------- */
+var menu=$('#menu');
+function closeMenu(){menu.hidden=true}
+$('#menuBtn').onclick=function(e){e.stopPropagation();menu.hidden=!menu.hidden};
+document.addEventListener('click',function(e){if(!menu.hidden&&!e.target.closest('.menuwrap'))closeMenu()});
+$('#mExport').onclick=function(){closeMenu();doExportXlsx()};
+$('#mImport').onclick=function(){closeMenu();$('#importFile').click()};
+$('#mCsv').onclick=function(){closeMenu();doExportCsv()};
+$('#mReset').onclick=function(){closeMenu();$('#resetChecks').click()};
+$('#mClear').onclick=function(){closeMenu();$('#clearAll').click()};
+$('#mSettings').onclick=function(){closeMenu();$('#settings').scrollIntoView({behavior:'smooth',block:'start'})};
+
+/* ---------- hold settings (настраиваются в Настройках) ---------- */
+function fmtS(ms){return (ms/1000).toLocaleString('ru-RU')}
+function updHoldUI(){
+  document.documentElement.style.setProperty('--hold',S.editHold+'ms');
+  document.documentElement.style.setProperty('--holdm',S.moveHold+'ms');
+  $('#editHold').value=S.editHold;$('#moveHold').value=S.moveHold;
+  $('#ehLbl').textContent=fmtS(S.editHold);$('#mhLbl').textContent=fmtS(S.moveHold);
+  $('#hE1').textContent=fmtS(S.editHold);$('#hE2').textContent=fmtS(S.editHold);$('#hM2').textContent=fmtS(S.moveHold);
+}
+$('#editHold').oninput=function(){S.editHold=+this.value;updHoldUI();save()};
+$('#moveHold').oninput=function(){S.moveHold=+this.value;updHoldUI();save()};
+
+/* ---------- grid ---------- */
+function cellHTML(b,p){
+  var k=kind(b,p),txt=getText(b,p),h=cellHue(b,p);
+  var cls='cell '+k+(txt?'':' empty'),chk='';
+  if(k==='task'){var d=S.tasks[b][p].d;if(d)cls+=' done';
+    chk='<span class="chk" role="checkbox" aria-checked="'+d+'" data-act="chk">'+(d?'✓':'')+'</span>'}
+  return '<div class="'+cls+'" data-b="'+b+'" data-p="'+p+'"'+(h!==null?' style="--h:'+h+'"':'')+'><span class="txt">'+esc(txt)+'</span>'+chk+'</div>';
+}
+function headHTML(b){
+  if(b===4)return '<div class="bh" data-b="4"><span class="bn">🎯</span><span class="bt">'+esc(S.main||'Главная цель')+'</span><span class="bs"></span></div>';
+  return '<div class="bh" data-b="'+b+'"><span class="bn">'+blockNum(b)+'</span><span class="bt">'+esc(S.sub[b]||'Подцель')+'</span><span class="bs"></span></div>';
+}
+function renderGrid(){
+  var h='';
+  for(var b=0;b<9;b++){
+    h+='<div class="blk'+(b===4?' center':'')+'" data-b="'+b+'"'+(b===4?'':' style="--h:'+S.hue[b]+'"')+'>'+headHTML(b)+'<div class="bg">';
+    for(var p=0;p<9;p++)h+=cellHTML(b,p);
+    h+='</div></div>';
+  }
+  $('#board').innerHTML=h;
+  applyZoom();updateHeaders();
+}
+function updateHeaders(){
+  document.querySelectorAll('#board .blk').forEach(function(el){
+    var b=+el.dataset.b,s=el.querySelector('.bs');if(!s)return;
+    if(b===4){var t=totals();s.textContent=t.d+'/'+t.t}else{var st=blockStat(b);s.textContent=st.d+'/'+st.t}
+  });
+}
+function applyZoom(){
+  var z=ZOOMS[S.zoom]||1,sc=$('#scroller'),bd=$('#board');
+  bd.style.width=(z*100)+'%';
+  var w=sc.clientWidth*z;if(!w)return;
+  document.documentElement.style.setProperty('--fs',Math.max(6.5,w/9*0.2)+'px');
+  $('#zLbl').textContent=Math.round(z*100)+'%';
+}
+$('#zIn').onclick=function(){if(S.zoom<ZOOMS.length-1){S.zoom++;applyZoom();save()}};
+$('#zOut').onclick=function(){if(S.zoom>0){S.zoom--;applyZoom();save()}};
+window.addEventListener('resize',applyZoom);
+
+function toggleTask(b,p){
+  var t=S.tasks[b][p];t.d=!t.d;save();
+  var el=document.querySelector('.cell[data-b="'+b+'"][data-p="'+p+'"]');
+  if(el){el.classList.toggle('done',t.d);var c=el.querySelector('.chk');if(c){c.textContent=t.d?'✓':'';c.setAttribute('aria-checked',t.d)}}
+  updateStats();
+}
+/* --- удержание: ячейка (правка) и заголовок блока (перемещение) --- */
+var movePick=null,holdT=null,holdEl=null,holdX=0,holdY=0,holdFired=false,lastHint=0;
+function hint(t){var n=Date.now();if(n-lastHint<2500)return;lastHint=n;toast(t)}
+function cancelHold(){clearTimeout(holdT);holdT=null;if(holdEl){holdEl.classList.remove('holding');holdEl=null}}
+function startMove(b){
+  movePick=b;$('#board').classList.add('moving');
+  var el=document.querySelector('#board .blk[data-b="'+b+'"]');if(el)el.classList.add('picked');
+  $('#mvN').textContent=blockNum(b);$('#moveBar').hidden=false;
+}
+function endMove(){
+  movePick=null;$('#board').classList.remove('moving');
+  document.querySelectorAll('#board .blk.picked').forEach(function(e){e.classList.remove('picked')});
+  $('#moveBar').hidden=true;
+}
+function swapBlocks(i,j){
+  var t=S.sub[i];S.sub[i]=S.sub[j];S.sub[j]=t;
+  t=S.tasks[i];S.tasks[i]=S.tasks[j];S.tasks[j]=t;
+  t=S.hue[i];S.hue[i]=S.hue[j];S.hue[j]=t;
+  save();endMove();renderGrid();updateStats();
+  [i,j].forEach(function(k){var el=document.querySelector('#board .blk[data-b="'+k+'"]');if(el)el.classList.add('swapped')});
+  vib(30);toast('Блоки '+blockNum(i)+' и '+blockNum(j)+' поменялись местами');
+}
+$('#mvCancel').onclick=endMove;
+$('#board').addEventListener('pointerdown',function(e){
+  holdFired=false;
+  if(e.pointerType==='mouse'&&e.button!==0)return;
+  if(movePick!==null)return;
+  var bh=e.target.closest('.bh'),c=e.target.closest('.cell'),el,ms,fn;
+  if(bh){
+    var hb=+bh.dataset.b;if(hb===4)return;
+    el=bh;ms=S.moveHold;fn=function(){startMove(hb)};
+  }else if(c){
+    var cb=+c.dataset.b,cp=+c.dataset.p;
+    el=c;ms=S.editHold;fn=function(){openEditor(cb,cp)};
+  }else return;
+  cancelHold();holdEl=el;holdX=e.clientX;holdY=e.clientY;
+  el.classList.add('holding');
+  holdT=setTimeout(function(){
+    holdT=null;if(holdEl){holdEl.classList.remove('holding');holdEl=null}
+    holdFired=true;vib(40);fn();
+  },ms);
+});
+$('#board').addEventListener('pointermove',function(e){
+  if(holdEl&&(Math.abs(e.clientX-holdX)>10||Math.abs(e.clientY-holdY)>10))cancelHold();
+});
+['pointerup','pointercancel','pointerleave'].forEach(function(n){$('#board').addEventListener(n,cancelHold)});
+$('#board').addEventListener('contextmenu',function(e){e.preventDefault()});
+$('#board').addEventListener('click',function(e){
+  if(holdFired){holdFired=false;return}
+  var blk=e.target.closest('.blk');if(!blk)return;
+  var b=+blk.dataset.b;
+  if(movePick!==null){
+    if(b===movePick)endMove();
+    else if(b===4)toast('Центральный блок переместить нельзя');
+    else swapBlocks(movePick,b);
+    return;
+  }
+  var c=e.target.closest('.cell');
+  if(c&&e.target.closest('[data-act=chk]')){toggleTask(+c.dataset.b,+c.dataset.p);return}
+  if(c)hint('Удерживайте ячейку '+fmtS(S.editHold)+' сек, чтобы изменить');
+  else if(b!==4&&e.target.closest('.bh'))hint('Удерживайте заголовок '+fmtS(S.moveHold)+' сек, чтобы переместить блок');
+});
+
+/* ---------- editor ---------- */
+var cur=null;
+function openEditor(b,p){
+  cur={b:b,p:p};var k=kind(b,p);
+  $('#sTitle').textContent=k==='main'?'🎯 Главная цель':k==='sub'?'Подцель · блок '+blockNum(b===4?p:b):'Шаг '+stepNum(p)+' · блок '+blockNum(b);
+  $('#sText').value=getText(b,p);
+  $('#sDoneRow').hidden=k!=='task';
+  $('#sDone').checked=k==='task'?S.tasks[b][p].d:false;
+  $('#sOpen').hidden=k!=='sub';
+  $('#sheet').hidden=false;
+  setTimeout(function(){var t=$('#sText');t.focus();t.setSelectionRange(t.value.length,t.value.length)},60);
+}
+function closeEditor(doSave){
+  if(!cur)return;
+  if(doSave){
+    setText(cur.b,cur.p,$('#sText').value.trim());
+    if(kind(cur.b,cur.p)==='task')S.tasks[cur.b][cur.p].d=$('#sDone').checked;
+    save();
+  }
+  cur=null;$('#sheet').hidden=true;
+  renderGrid();updateStats();
+}
+$('#sOk').onclick=function(){closeEditor(true)};
+$('#sClear').onclick=function(){$('#sText').value='';$('#sDone').checked=false;$('#sText').focus()};
+$('#sOpen').onclick=function(){
+  var b=cur.b===4?cur.p:cur.b;closeEditor(true);S.block=b;setView('blocks');
+};
+$('#sheet').addEventListener('click',function(e){if(e.target===$('#sheet'))closeEditor(true)});
+$('#sText').addEventListener('keydown',function(e){if(e.key==='Escape')closeEditor(true)});
+
+/* ---------- blocks view ---------- */
+function renderMini(){
+  var h='';
+  for(var b=0;b<9;b++){
+    var on=S.block===b?' on':'';
+    if(b===4){h+='<button class="main'+on+'" data-b="4"><span class="n">🎯 ЦЕЛЬ</span><span class="t">'+esc(S.main||'Главная цель')+'</span><span class="mb"><i style="width:'+(totals().d/64*100)+'%"></i></span></button>'}
+    else{var st=blockStat(b);h+='<button class="'+on.trim()+'" data-b="'+b+'" style="--h:'+S.hue[b]+'"><span class="n">БЛОК '+blockNum(b)+'</span><span class="t">'+esc(S.sub[b]||'Подцель')+'</span><span class="mb"><i style="width:'+(st.d/st.t*100)+'%"></i></span></button>'}
+  }
+  $('#mini').innerHTML=h;
+}
+function renderDetail(){
+  var b=S.block,h='';
+  if(b===4){
+    h+='<div class="dhead main"><label>🎯 Главная цель</label><textarea data-b="4" data-p="4" rows="1" placeholder="Чего вы хотите достичь?">'+esc(S.main)+'</textarea></div>';
+    for(var p=0;p<9;p++){if(p===4)continue;var st=blockStat(p);
+      h+='<div class="item" style="--h:'+S.hue[p]+'"><span class="num">'+blockNum(p)+'</span><textarea data-b="4" data-p="'+p+'" rows="1" placeholder="Подцель '+blockNum(p)+'">'+esc(S.sub[p])+'</textarea><button class="goto" data-go="'+p+'">'+st.d+'/'+st.t+' →</button></div>'}
+  }else{
+    h+='<div class="dhead" style="--h:'+S.hue[b]+'"><label>Подцель · блок '+blockNum(b)+'</label><textarea data-b="'+b+'" data-p="4" rows="1" placeholder="Название подцели">'+esc(S.sub[b])+'</textarea></div>';
+    for(var q=0;q<9;q++){if(q===4)continue;var t=S.tasks[b][q];
+      h+='<div class="item'+(t.d?' done':'')+'" style="--h:'+S.hue[b]+'"><button class="bigchk'+(t.d?' on':'')+'" data-chk="'+q+'" aria-label="Выполнено">'+(t.d?'✓':'')+'</button><textarea data-b="'+b+'" data-p="'+q+'" rows="1" placeholder="Шаг '+stepNum(q)+'">'+esc(t.t)+'</textarea></div>'}
+  }
+  var d=$('#detail');d.innerHTML=h;
+  d.style.animation='none';void d.offsetWidth;d.style.animation='';
+  d.querySelectorAll('textarea').forEach(autosize);
+}
+function autosize(t){t.style.height='auto';t.style.height=t.scrollHeight+'px'}
+$('#mini').addEventListener('click',function(e){
+  var bt=e.target.closest('button');if(!bt)return;
+  S.block=+bt.dataset.b;save();renderMini();renderDetail();
+});
+$('#detail').addEventListener('input',function(e){
+  var t=e.target;if(t.tagName!=='TEXTAREA')return;
+  t.value=t.value.replace(/\n/g,' ');
+  setText(+t.dataset.b,+t.dataset.p,t.value);autosize(t);save();renderMini();
+});
+$('#detail').addEventListener('click',function(e){
+  var c=e.target.closest('[data-chk]');
+  if(c){var q=+c.dataset.chk,t=S.tasks[S.block][q];t.d=!t.d;c.classList.toggle('on',t.d);c.textContent=t.d?'✓':'';c.parentNode.classList.toggle('done',t.d);save();updateStats();return}
+  var g=e.target.closest('[data-go]');
+  if(g){S.block=+g.dataset.go;save();renderMini();renderDetail();window.scrollTo({top:0,behavior:'smooth'})}
+});
+$('#detail').addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.tagName==='TEXTAREA'){e.preventDefault();e.target.blur()}});
+
+/* ---------- views / stats ---------- */
+function setView(v){
+  endMove();S.view=v;saveNow();
+  $('#viewGrid').hidden=v!=='grid';$('#viewBlocks').hidden=v!=='blocks';
+  $('#tabGrid').classList.toggle('on',v==='grid');$('#tabBlocks').classList.toggle('on',v==='blocks');
+  if(v==='grid')renderGrid();else{renderMini();renderDetail()}
+  window.scrollTo({top:0});
+}
+$('#tabGrid').onclick=function(){setView('grid')};
+$('#tabBlocks').onclick=function(){setView('blocks')};
+function updateStats(){
+  var t=totals(),pct=Math.round(t.d/t.t*100);
+  $('#pTxt').textContent=t.d+' / '+t.t;$('#pPct').textContent=pct+'%';$('#pBar').style.width=pct+'%';
+  if(pct===100&&!S.celebrated){S.celebrated=true;vib([70,50,70,50,180]);toast('🎉 Все 64 шага выполнены! Отличная работа!');save()}
+  else if(pct<100&&S.celebrated){S.celebrated=false}
+  if(S.view==='blocks')renderMini();else updateHeaders();
+}
+
+/* ---------- settings ---------- */
+$('#dailySw').checked=!!S.daily;
+$('#dailySw').onchange=function(){S.daily=this.checked;S.lastDay=todayStr();saveNow();toast(S.daily?'Ежедневный сброс включён':'Ежедневный сброс выключен')};
+function resetChecks(){for(var b=0;b<9;b++)for(var p=0;p<9;p++)S.tasks[b][p].d=false}
+function dailyCheck(){
+  var t=todayStr();
+  if(S.daily&&S.lastDay!==t){resetChecks();S.lastDay=t;saveNow();rerender();toast('Новый день — отметки сброшены')}
+  else if(S.lastDay!==t){S.lastDay=t;saveNow()}
+}
+$('#resetChecks').onclick=function(){if(confirm('Снять все отметки выполнения?')){resetChecks();saveNow();rerender();toast('Отметки сброшены')}};
+$('#clearAll').onclick=function(){
+  if(confirm('Удалить ВСЕ данные? Это действие нельзя отменить.')&&confirm('Точно удалить?')){
+    var th=S.theme,eh=S.editHold,mh=S.moveHold;S=blank();S.theme=th;S.editHold=eh;S.moveHold=mh;saveNow();$('#dailySw').checked=false;updHoldUI();rerender();toast('Данные удалены')}
+};
+function rerender(){if(S.view==='grid')renderGrid();else{renderMini();renderDetail()}updateStats()}
+
+/* ---------- export ---------- */
+function stamp(){return todayStr()}
+function download(blob,name){
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1500);
+}
+function colL(i){return String.fromCharCode(65+i)}
+function xe(s){return String(s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function cx(r,c,v,s){
+  var ref=colL(c)+r;
+  if(v===''||v==null)return '<c r="'+ref+'" s="'+s+'"/>';
+  return '<c r="'+ref+'" s="'+s+'" t="inlineStr"><is><t xml:space="preserve">'+xe(v)+'</t></is></c>';
+}
+function sheetXML(cols,rowsXml){
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"/></sheetViews><sheetFormatPr defaultRowHeight="15"/><cols>'+
+    cols.map(function(w,i){return '<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+w+'" customWidth="1"/>'}).join('')+'</cols><sheetData>'+rowsXml+'</sheetData></worksheet>';
+}
+var CRC=(function(){var t=[];for(var n=0;n<256;n++){var c=n;for(var k=0;k<8;k++)c=c&1?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c>>>0}return t})();
+function crc32(buf){var c=0xFFFFFFFF;for(var i=0;i<buf.length;i++)c=CRC[(c^buf[i])&0xFF]^(c>>>8);return(c^0xFFFFFFFF)>>>0}
+function zip(files){
+  var enc=new TextEncoder(),parts=[],cds=[],off=0;
+  files.forEach(function(f){
+    var nb=enc.encode(f.name),db=enc.encode(f.data),crc=crc32(db);
+    var h=new DataView(new ArrayBuffer(30));
+    h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(8,0,true);h.setUint16(10,0,true);h.setUint16(12,0x21,true);
+    h.setUint32(14,crc,true);h.setUint32(18,db.length,true);h.setUint32(22,db.length,true);h.setUint16(26,nb.length,true);h.setUint16(28,0,true);
+    parts.push(new Uint8Array(h.buffer),nb,db);
+    var c=new DataView(new ArrayBuffer(46));
+    c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(10,0,true);c.setUint16(12,0,true);c.setUint16(14,0x21,true);
+    c.setUint32(16,crc,true);c.setUint32(20,db.length,true);c.setUint32(24,db.length,true);c.setUint16(28,nb.length,true);
+    c.setUint16(30,0,true);c.setUint16(32,0,true);c.setUint16(34,0,true);c.setUint16(36,0,true);c.setUint32(38,0,true);c.setUint32(42,off,true);
+    cds.push(new Uint8Array(c.buffer),nb);
+    off+=30+nb.length+db.length;
+  });
+  var cdSize=0;cds.forEach(function(a){cdSize+=a.length});
+  var e=new DataView(new ArrayBuffer(22));
+  e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cdSize,true);e.setUint32(16,off,true);
+  return new Blob(parts.concat(cds,[new Uint8Array(e.buffer)]),{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+function buildXlsx(){
+  var NS='http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+  /* sheet 1: grid */
+  var rows='',R,C;
+  for(R=0;R<9;R++){
+    rows+='<row r="'+(R+1)+'" ht="62" customHeight="1">';
+    for(C=0;C<9;C++){
+      var b=Math.floor(R/3)*3+Math.floor(C/3),p=(R%3)*3+(C%3),k=kind(b,p),txt=getText(b,p);
+      if(k==='task'&&S.tasks[b][p].d&&txt)txt='✓ '+txt;
+      rows+=cx(R+1,C,txt,k==='main'?2:k==='sub'?3:1);
+    }
+    rows+='</row>';
+  }
+  var tot=totals();
+  rows+='<row r="11">'+cx(11,0,'Выполнено: '+tot.d+' из '+tot.t+' ('+Math.round(tot.d/tot.t*100)+'%)',5)+'</row>';
+  var s1=sheetXML([22,22,22,22,22,22,22,22,22],rows);
+  /* sheet 2: task list */
+  var r2='<row r="1">'+['Блок','Подцель','№ шага','Шаг','Статус'].map(function(v,i){return cx(1,i,v,4)}).join('')+'</row>',n=2;
+  for(var bb=0;bb<9;bb++){if(bb===4)continue;
+    for(var pp=0;pp<9;pp++){if(pp===4)continue;
+      var t=S.tasks[bb][pp];
+      r2+='<row r="'+n+'">'+cx(n,0,String(blockNum(bb)),1)+cx(n,1,S.sub[bb],1)+cx(n,2,String(stepNum(pp)),1)+cx(n,3,t.t,1)+cx(n,4,t.d?'Выполнено':'Не выполнено',1)+'</row>';n++}}
+  r2+='<row r="'+(n+1)+'">'+cx(n+1,0,'Главная цель: '+S.main,5)+'</row>';
+  var s2=sheetXML([8,32,9,48,16],r2);
+  var styles='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="'+NS+'">'+
+   '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>'+
+   '<fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>'+
+   '<fill><patternFill patternType="solid"><fgColor rgb="FFFFD966"/><bgColor indexed="64"/></patternFill></fill>'+
+   '<fill><patternFill patternType="solid"><fgColor rgb="FFBDD7EE"/><bgColor indexed="64"/></patternFill></fill></fills>'+
+   '<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>'+
+   '<border><left style="thin"><color rgb="FFBBBBBB"/></left><right style="thin"><color rgb="FFBBBBBB"/></right><top style="thin"><color rgb="FFBBBBBB"/></top><bottom style="thin"><color rgb="FFBBBBBB"/></bottom><diagonal/></border></borders>'+
+   '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'+
+   '<cellXfs count="6">'+
+   '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'+
+   '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'+
+   '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'+
+   '<xf numFmtId="0" fontId="1" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'+
+   '<xf numFmtId="0" fontId="1" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'+
+   '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>'+
+   '</cellXfs></styleSheet>';
+  var files=[
+   {name:'[Content_Types].xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>'},
+   {name:'_rels/.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'},
+   {name:'xl/workbook.xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="'+NS+'" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Мандала 9x9" sheetId="1" r:id="rId1"/><sheet name="Задачи" sheetId="2" r:id="rId2"/></sheets></workbook>'},
+   {name:'xl/_rels/workbook.xml.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'},
+   {name:'xl/styles.xml',data:styles},
+   {name:'xl/worksheets/sheet1.xml',data:s1},
+   {name:'xl/worksheets/sheet2.xml',data:s2}
+  ];
+  return zip(files);
+}
+function doExportXlsx(){
+  try{download(buildXlsx(),'mandalart-'+stamp()+'.xlsx');toast('Файл .xlsx сформирован')}
+  catch(e){toast('Ошибка экспорта, попробуйте CSV')}
+}
+function csvCell(v){v=String(v==null?'':v);return /[;"\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
+function doExportCsv(){
+  var rows=[['Главная цель',S.main],[],['Блок','Подцель','№ шага','Шаг','Статус']];
+  for(var b=0;b<9;b++){if(b===4)continue;for(var p=0;p<9;p++){if(p===4)continue;var t=S.tasks[b][p];rows.push([blockNum(b),S.sub[b],stepNum(p),t.t,t.d?'Выполнено':'Не выполнено'])}}
+  var csv='\uFEFF'+rows.map(function(r){return r.map(csvCell).join(';')}).join('\r\n');
+  download(new Blob([csv],{type:'text/csv;charset=utf-8'}),'mandalart-'+stamp()+'.csv');toast('Файл .csv сформирован');
+}
+$('#csvBtn').onclick=doExportCsv;
+
+/* ---------- import ---------- */
+function u16(d,o){return d[o]|(d[o+1]<<8)}
+function u32(d,o){return(d[o]|(d[o+1]<<8)|(d[o+2]<<16)|(d[o+3]<<24))>>>0}
+async function unzip(buf){
+  var d=new Uint8Array(buf),i=d.length-22;
+  while(i>=0&&u32(d,i)!==0x06054b50)i--;
+  if(i<0)throw new Error('not zip');
+  var n=u16(d,i+10),off=u32(d,i+16),files={};
+  for(var k=0;k<n;k++){
+    var method=u16(d,off+10),csize=u32(d,off+20),nl=u16(d,off+28),el=u16(d,off+30),cl=u16(d,off+32),lo=u32(d,off+42);
+    var name=new TextDecoder().decode(d.subarray(off+46,off+46+nl));
+    off+=46+nl+el+cl;
+    var ds=lo+30+u16(d,lo+26)+u16(d,lo+28);
+    files[name]={method:method,raw:d.subarray(ds,ds+csize)};
+  }
+  return files;
+}
+async function fileText(f){
+  if(!f)return null;
+  if(f.method===0)return new TextDecoder().decode(f.raw);
+  var s=new Blob([f.raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  return new TextDecoder().decode(await new Response(s).arrayBuffer());
+}
+function xmlDoc(s){return new DOMParser().parseFromString(s,'application/xml')}
+function colIdx(ref){var m=/^([A-Z]+)/.exec(ref)[1],n=0;for(var i=0;i<m.length;i++)n=n*26+m.charCodeAt(i)-64;return n-1}
+async function readXlsxRows(buf){
+  var files=await unzip(buf);
+  var shared=[],ss=await fileText(files['xl/sharedStrings.xml']);
+  if(ss){Array.prototype.forEach.call(xmlDoc(ss).getElementsByTagName('si'),function(si){
+    var t='';Array.prototype.forEach.call(si.getElementsByTagName('t'),function(x){t+=x.textContent});shared.push(t)})}
+  var wb=xmlDoc(await fileText(files['xl/workbook.xml'])),rels=xmlDoc(await fileText(files['xl/_rels/workbook.xml.rels']));
+  var relMap={};Array.prototype.forEach.call(rels.getElementsByTagName('Relationship'),function(r){relMap[r.getAttribute('Id')]=r.getAttribute('Target')});
+  var sheets=Array.prototype.map.call(wb.getElementsByTagName('sheet'),function(s){
+    var t=relMap[s.getAttribute('r:id')]||'';t=t.replace(/^\//,'');if(t.indexOf('xl/')!==0)t='xl/'+t;
+    return{name:s.getAttribute('name'),path:t}});
+  var pick=sheets.filter(function(s){return s.name==='Задачи'})[0]||sheets[1]||sheets[0];
+  var sx=xmlDoc(await fileText(files[pick.path])),rows=[];
+  Array.prototype.forEach.call(sx.getElementsByTagName('row'),function(row){
+    var arr=[];
+    Array.prototype.forEach.call(row.getElementsByTagName('c'),function(c){
+      var ci=colIdx(c.getAttribute('r')),t=c.getAttribute('t'),v='';
+      if(t==='s'){var ve=c.getElementsByTagName('v')[0];v=ve?shared[+ve.textContent]||'':''}
+      else if(t==='inlineStr'){Array.prototype.forEach.call(c.getElementsByTagName('t'),function(x){v+=x.textContent})}
+      else{var ve2=c.getElementsByTagName('v')[0];v=ve2?ve2.textContent:''}
+      arr[ci]=v;
+    });
+    rows.push(arr);
+  });
+  return rows;
+}
+function parseCSV(text){
+  text=text.replace(/^\uFEFF/,'');
+  var first=text.split(/\r?\n/)[0]||'',delim=(first.split(';').length>=first.split(',').length)?';':',';
+  var rows=[],row=[],cell='',q=false;
+  for(var i=0;i<text.length;i++){
+    var ch=text[i];
+    if(q){if(ch==='"'){if(text[i+1]==='"'){cell+='"';i++}else q=false}else cell+=ch}
+    else if(ch==='"')q=true;
+    else if(ch===delim){row.push(cell);cell=''}
+    else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&text[i+1]==='\n')i++;row.push(cell);rows.push(row);row=[];cell=''}
+    else cell+=ch;
+  }
+  if(cell!==''||row.length){row.push(cell);rows.push(row)}
+  return rows;
+}
+function applyImport(rows){
+  var N=blank(),found=0;
+  rows.forEach(function(r){
+    var a=String(r[0]==null?'':r[0]).trim();
+    if(/^Главная цель/i.test(a)){
+      var m=a.replace(/^Главная цель\s*:?\s*/i,'');
+      N.main=(m||String(r[1]||'')).trim();return;
+    }
+    var bn=parseInt(a,10),sn=parseInt(r[2],10);
+    if(bn>=1&&bn<=8&&sn>=1&&sn<=8&&/^\d+$/.test(a)){
+      var b=bn<=4?bn-1:bn,p=sn<=4?sn-1:sn;
+      N.sub[b]=String(r[1]||'').trim();
+      N.tasks[b][p].t=String(r[3]||'').trim();
+      N.tasks[b][p].d=/^выполнено$/i.test(String(r[4]||'').trim());
+      found++;
+    }
+  });
+  if(!found&&!N.main)throw new Error('empty');
+  N.theme=S.theme;N.daily=S.daily;N.view=S.view;N.zoom=S.zoom;N.editHold=S.editHold;N.moveHold=S.moveHold;N.lastDay=todayStr();
+  S=N;saveNow();rerender();
+  return found;
+}
+$('#importFile').onchange=async function(){
+  var f=this.files[0];this.value='';if(!f)return;
+  if(!confirm('Заменить текущие данные данными из файла «'+f.name+'»?'))return;
+  try{
+    var rows;
+    if(/\.csv$/i.test(f.name)||f.type==='text/csv')rows=parseCSV(await f.text());
+    else rows=await readXlsxRows(await f.arrayBuffer());
+    var n=applyImport(rows);toast('Импортировано шагов: '+n);
+  }catch(e){toast('Не удалось прочитать файл. Используйте файл, выгруженный из этого приложения')}
+};
+
+/* ---------- offline (service worker) ---------- */
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){
+  navigator.serviceWorker.register('sw.js').catch(function(){});
+}
+
+/* ---------- init ---------- */
+updHoldUI();
+applyTheme();
+if(window.matchMedia)try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(){if(!S.theme)applyTheme()})}catch(e){}
+dailyCheck();
+updateStats();
+setView(S.view==='blocks'?'blocks':'grid');
+})();
+</script>
+</body>
+</html>
